@@ -3,7 +3,7 @@ import httpStatus from "http-status-codes";
 import sendResponse from "../../shared/utils/apiResponse";
 import catchAsync from "../../shared/utils/asyncHandler";
 import { UnauthorizedError, ValidationError } from "../../shared/errors";
-import * as queueService from "./queue.service";
+import * as notificationService from "./notification.service";
 
 const requireId = (value: unknown): string => {
   if (typeof value !== "string" || !value.trim()) {
@@ -12,62 +12,63 @@ const requireId = (value: unknown): string => {
   return value;
 };
 
-export const getMyQueueController = catchAsync(
+export const getNotificationsController = catchAsync(
   async (req: Request, res: Response) => {
     const userId = req.user?.id;
     if (!userId) throw new UnauthorizedError("Authentication required");
-    const result = await queueService.getMyQueue(userId);
+    const result = await notificationService.getNotifications(userId);
     sendResponse(res, {
       success: true,
       statusCode: httpStatus.OK,
-      message: "Queue position retrieved successfully",
+      message: "Notifications retrieved successfully",
       data: result,
     });
   },
 );
 
-export const getTodayQueueController = catchAsync(
-  async (req: Request, res: Response) => {
-    const userId = req.user?.id;
-    const role = req.user?.role;
-    if (!userId || !role) throw new UnauthorizedError("Authentication required");
-    const result = await queueService.getTodayQueue(userId, role);
-    sendResponse(res, {
-      success: true,
-      statusCode: httpStatus.OK,
-      message: "Today's queue retrieved successfully",
-      data: result,
-    });
-  },
-);
-
-export const callNextController = catchAsync(
+export const markAsReadController = catchAsync(
   async (req: Request, res: Response) => {
     const userId = req.user?.id;
     if (!userId) throw new UnauthorizedError("Authentication required");
-    const result = await queueService.callNext(userId, requireId(req.params.id));
-    sendResponse(res, {
-      success: true,
-      statusCode: httpStatus.OK,
-      message: "Patient called successfully",
-      data: result,
-    });
-  },
-);
-
-export const updateQueueStatusController = catchAsync(
-  async (req: Request, res: Response) => {
-    const userId = req.user?.id;
-    if (!userId) throw new UnauthorizedError("Authentication required");
-    const result = await queueService.updateQueueStatus(
+    const result = await notificationService.markAsRead(
       userId,
       requireId(req.params.id),
-      req.body.status,
     );
     sendResponse(res, {
       success: true,
       statusCode: httpStatus.OK,
-      message: "Queue status updated successfully",
+      message: "Notification marked as read successfully",
+      data: result,
+    });
+  },
+);
+
+export const markAllAsReadController = catchAsync(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) throw new UnauthorizedError("Authentication required");
+    const result = await notificationService.markAllAsRead(userId);
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "All notifications marked as read successfully",
+      data: result,
+    });
+  },
+);
+
+export const deleteNotificationController = catchAsync(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) throw new UnauthorizedError("Authentication required");
+    const result = await notificationService.deleteNotification(
+      userId,
+      requireId(req.params.id),
+    );
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Notification deleted successfully",
       data: result,
     });
   },
