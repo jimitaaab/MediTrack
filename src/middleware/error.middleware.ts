@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { Prisma } from "../../generated/prisma/client";
 import httpStatus from "http-status-codes";
+import { AppError } from "../shared/errors";
 
 const handlePrismaError = (err: Prisma.PrismaClientKnownRequestError) => {
   switch (err.code) {
@@ -36,7 +37,10 @@ const errorHandler = (
   let statusCode = httpStatus.INTERNAL_SERVER_ERROR;
   let message = "Internal server error";
 
-  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+  if (err instanceof AppError) {
+    statusCode = err.statusCode;
+    message = err.message;
+  } else if (err instanceof Prisma.PrismaClientKnownRequestError) {
     const prismaError = handlePrismaError(err);
     statusCode = prismaError.statusCode;
     message = prismaError.message;
