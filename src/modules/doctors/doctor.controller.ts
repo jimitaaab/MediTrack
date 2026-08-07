@@ -101,6 +101,20 @@ export const getOwnProfileController = catchAsync(
   },
 );
 
+export const getDashboardController = catchAsync(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) throw new UnauthorizedError("Authentication required");
+    const result = await doctorService.getDashboard(userId);
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Doctor dashboard retrieved successfully",
+      data: result,
+    });
+  },
+);
+
 export const updateOwnProfileController = catchAsync(
   async (req: Request, res: Response) => {
     const userId = req.user?.id;

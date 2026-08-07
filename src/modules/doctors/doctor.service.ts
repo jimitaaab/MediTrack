@@ -5,7 +5,7 @@ import {
   NotFoundError,
   ValidationError,
 } from "../../shared/errors";
-import { AccountStatus, AppointmentStatus, DoctorVerificationStatus, Weekday } from "../../../generated/prisma/client";
+import { AccountStatus, AppointmentStatus, DoctorVerificationStatus, QueueStatus, Weekday } from "../../../generated/prisma/client";
 import { haversineDistance } from "../../shared/utils/distanceHelper";
 import type {
   CreateScheduleInput,
@@ -590,4 +590,130 @@ export const getAvailableSlots = async (
   const slots = allSlots.filter((slot) => !taken.has(slot));
 
   return { date: dateString, dayOfWeek, slots };
+};
+
+const getTodayRangeDashboard = () => {
+  const now = new Date();
+  const start = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+  return { start, end };
+};
+
+export const getDashboard = async (userId: string) => {
+  const doctor = await prisma.doctor.findUnique({
+    where: { userId },
+    include: {
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          profilePhoto: true,
+        },
+      },
+      specialization: true,
+    },
+  });
+  if (!doctor) {
+    throw new NotFoundError("Doctor profile not found");
+  }
+
+  const { start, end } = getTodayRangeDashboard();
+
+  const todayAppointments = await prisma.appointment.findMany({
+    where: { doctorId: doctor.id, date: { gte: start, lt: end } },
+    orderBy: [{ date: "asc" }, { serialNumber: "asc" }],
+    include: {
+      patient: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+              phone: true,
+              profilePhoto: true,
+            },
+          },
+        },
+      },
+      queue: {
+        select: {
+          id: true,
+          serialNumber: true,
+          status: true,
+          calledAt: true,
+          completedAt: true,
+        },
+      },
+    },
+  });
+
+  const queueEntries = todayAppointments
+    .map((appointment) => appointment.queue)
+    .filter((entry): entry is NonNullable<typeof entry> => entry !== null)
+    .sort((a, b) => a.serialNumber - b.serialNumber);
+
+  const current =
+    queueEntries.find(
+      (entry) =>
+        entry.status === QueueStatus.IN_CONSULTATION ||
+        entry.status === QueueStatus.CALLED,
+    ) ?? null;
+  const waitingList = queueEntries.filter(
+    (entry) => entry.status === QueueStatus.WAITING,
+  );
+  const next = waitingList[0] ?? null;
+  const remaining = waitingList.length;
+
+  const [
+    totalAppointments,
+    completedAppointments,
+    pendingRequests,
+    totalReviews,
+  ] = await Promise.all([
+    prisma.appointment.count({ where: { doctorId: doctor.id } }),
+    prisma.appointment.count({
+      where: {
+        doctorId: doctor.id,
+        status: AppointmentStatus.COMPLETED,
+      },
+    }),
+    prisma.appointment.count({
+      where: { doctorId: doctor.id, status: AppointmentStatus.PENDING },
+    }),
+    prisma.review.count({ where: { doctorId: doctor.id } }),
+  ]);
+
+  return {
+    welcome: {
+      fullName: doctor.user.fullName,
+      profilePhoto: doctor.user.profilePhoto,
+    },
+    doctor: {
+      id: doctor.id,
+      specialization: doctor.specialization.name,
+      hospitalName: doctor.hospitalName,
+      clinicAddress: doctor.clinicAddress,
+      consultationFee: doctor.consultationFee,
+      averageRating: doctor.averageRating,
+      totalReviews: doctor.totalReviews,
+    },
+    today: {
+      total: todayAppointments.length,
+      queue: {
+        total: queueEntries.length,
+        current,
+        next,
+        remaining,
+      },
+      appointments: todayAppointments,
+    },
+    totals: {
+      totalAppointments,
+      completedAppointments,
+      pendingRequests,
+      totalReviews,
+    },
+  };
 };

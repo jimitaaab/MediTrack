@@ -1,4 +1,5 @@
 import { Prisma } from "../../../generated/prisma/client";
+import { AppointmentStatus, QueueStatus } from "../../../generated/prisma/client";
 import { prisma } from "../../config/prisma";
 import { NotFoundError } from "../../shared/errors";
 
@@ -67,4 +68,134 @@ export const updateOwnProfile = async (
   ]);
 
   return getOwnProfile(userId);
+};
+
+const getTodayRange = () => {
+  const now = new Date();
+  const start = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+  return { start, end };
+};
+
+export const getDashboard = async (userId: string) => {
+  const assistant = await prisma.doctorAssistant.findUnique({
+    where: { userId },
+    include: {
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          profilePhoto: true,
+        },
+      },
+    },
+  });
+  if (!assistant) {
+    throw new NotFoundError("Assistant profile not found");
+  }
+
+  const { start, end } = getTodayRange();
+
+  let doctor = null;
+  if (assistant.doctorId) {
+    doctor = await prisma.doctor.findUnique({
+      where: { id: assistant.doctorId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            profilePhoto: true,
+          },
+        },
+        specialization: true,
+      },
+    });
+  }
+
+  const doctorId = assistant.doctorId;
+
+  const todayQueue = doctorId
+    ? await prisma.queue.findMany({
+        where: {
+          doctorId,
+          appointment: { date: { gte: start, lt: end } },
+        },
+        orderBy: { serialNumber: "asc" },
+        include: {
+          appointment: {
+            include: {
+              patient: {
+                include: {
+                  user: {
+                    select: {
+                      id: true,
+                      fullName: true,
+                      phone: true,
+                      profilePhoto: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      })
+    : [];
+
+  const [todayAppointments, pendingAppointments] = await Promise.all([
+    doctorId
+      ? prisma.appointment.count({
+          where: {
+            doctorId,
+            date: { gte: start, lt: end },
+            status: {
+              in: [
+                AppointmentStatus.PENDING,
+                AppointmentStatus.CONFIRMED,
+              ],
+            },
+          },
+        })
+      : Promise.resolve(0),
+    doctorId
+      ? prisma.appointment.count({
+          where: {
+            doctorId,
+            status: AppointmentStatus.PENDING,
+          },
+        })
+      : Promise.resolve(0),
+  ]);
+
+  const waiting = todayQueue.filter(
+    (entry) => entry.status === QueueStatus.WAITING,
+  );
+  const current =
+    todayQueue.find(
+      (entry) =>
+        entry.status === QueueStatus.IN_CONSULTATION ||
+        entry.status === QueueStatus.CALLED,
+    ) ?? null;
+  const next = waiting[0] ?? null;
+  const remaining = waiting.length;
+
+  return {
+    welcome: {
+      fullName: assistant.user.fullName,
+      profilePhoto: assistant.user.profilePhoto,
+    },
+    doctor,
+    today: {
+      total: todayQueue.length,
+      queue: { total: todayQueue.length, current, next, remaining },
+      todayAppointments,
+    },
+    totals: {
+      pendingAppointments,
+      todayAppointments,
+    },
+  };
 };
