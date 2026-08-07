@@ -5,7 +5,7 @@ const notFound = (req: Request, res: Response, next: NextFunction) => {
   res.status(httpStatus.NOT_FOUND).json({
     success: false,
     statusCode: httpStatus.NOT_FOUND,
-    message: `Route not found: ${req.method} ${req.originalUrl}`,
+    message: `Routasdcqwae not found: ${req.method} ${req.originalUrl}`,
   });
 };
 
