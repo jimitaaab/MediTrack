@@ -6,7 +6,16 @@ import * as doctorController from "./doctor.controller";
 
 const router = Router();
 
+router.get("/", doctorController.listDoctorsController);
+router.get("/nearby", auth, requireRole(Roles.PATIENT), doctorController.getNearbyDoctorsController);
 router.get("/me", auth, requireRole(Roles.DOCTOR), doctorController.getOwnProfileController);
 router.patch("/me", auth, requireRole(Roles.DOCTOR), doctorController.updateOwnProfileController);
+router.get("/me/schedule", auth, requireRole(Roles.DOCTOR), doctorController.getOwnSchedulesController);
+router.post("/me/schedule", auth, requireRole(Roles.DOCTOR), doctorController.createScheduleController);
+router.patch("/me/schedule/:id", auth, requireRole(Roles.DOCTOR), doctorController.updateScheduleController);
+router.delete("/me/schedule/:id", auth, requireRole(Roles.DOCTOR), doctorController.deleteScheduleController);
+router.patch("/me/clinic-location", auth, requireRole(Roles.DOCTOR), doctorController.updateClinicLocationController);
+router.get("/:id", doctorController.getPublicDoctorProfileController);
+router.get("/:id/schedule", doctorController.getAvailableSlotsController);
 
 export default router;
