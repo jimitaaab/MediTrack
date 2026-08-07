@@ -20,4 +20,5 @@ export default {
   jwt_refresh_Secret: getEnv("jwt_refresh_Secret"),
   jwt_access_ExpiresIn: getEnv("jwt_access_ExpiresIn", "1d"),
   jwt_refresh_ExpiresIn: getEnv("jwt_refresh_ExpiresIn", "7d"),
+  openai_api_key: process.env.OPENAI_API_KEY ?? "",
 };
