@@ -46,3 +46,17 @@ export const updateOwnProfileController = catchAsync(
     });
   },
 );
+
+export const getAssignedDoctorController = catchAsync(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) throw new UnauthorizedError("Authentication required");
+    const result = await assistantService.getAssignedDoctor(userId);
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Assigned doctor retrieved successfully",
+      data: result,
+    });
+  },
+);

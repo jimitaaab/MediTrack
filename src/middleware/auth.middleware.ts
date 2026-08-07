@@ -4,6 +4,7 @@ import config from "../config/env";
 import { jwtUtils } from "../shared/utils/jwt.utils";
 import { JwtPayload } from "jsonwebtoken";
 import { UnauthorizedError } from "../shared/errors";
+import { prisma } from "../config/prisma";
 
 const auth = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
   const token = req.cookies.accessToken
@@ -21,6 +22,17 @@ const auth = catchAsync(async (req: Request, res: Response, next: NextFunction) 
     throw new UnauthorizedError(verifiedToken.message);
   }
   const { email, id,  role } = verifiedToken.data as JwtPayload;
+
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: { status: true },
+  });
+  if (!user) {
+    throw new UnauthorizedError("User no longer exists");
+  }
+  if (user.status !== "ACTIVE") {
+    throw new UnauthorizedError("Account is not active. Please contact support.");
+  }
 
   req.user = { email, id, role };
   next();

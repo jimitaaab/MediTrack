@@ -18,6 +18,7 @@ import type {
   ChangePasswordInput,
   ForgotPasswordInput,
   LoginInput,
+  RegisterAssistantInput,
   RegisterDoctorInput,
   RegisterPatientInput,
   ResetPasswordInput,
@@ -102,6 +103,34 @@ export const registerDoctor = async (payload: RegisterDoctorInput) => {
           verificationStatus: true,
         },
       },
+    },
+  });
+  return user;
+};
+
+export const registerAssistant = async (payload: RegisterAssistantInput) => {
+  const user = await prisma.user.create({
+    data: {
+      fullName: payload.fullName,
+      email: payload.email,
+      phone: payload.phone,
+      password: hashPassword(payload.password),
+      role: Role.DOCTOR_ASSISTANT,
+      status: AccountStatus.ACTIVE,
+      assistant: {
+        create: {
+          designation: payload.designation,
+        },
+      },
+    },
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      phone: true,
+      role: true,
+      status: true,
+      createdAt: true,
     },
   });
   return user;

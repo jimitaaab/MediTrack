@@ -54,6 +54,18 @@ export const registerDoctorController = catchAsync(
   },
 );
 
+export const registerAssistantController = catchAsync(
+  async (req: Request, res: Response) => {
+    const result = await authService.registerAssistant(req.body);
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.CREATED,
+      message: "Assistant registered successfully",
+      data: result,
+    });
+  },
+);
+
 export const loginController = catchAsync(
   async (req: Request, res: Response) => {
     const { user, tokens } = await authService.login(req.body);

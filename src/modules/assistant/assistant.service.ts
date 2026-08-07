@@ -79,6 +79,38 @@ const getTodayRange = () => {
   return { start, end };
 };
 
+export const getAssignedDoctor = async (userId: string) => {
+  const assistant = await prisma.doctorAssistant.findUnique({
+    where: { userId },
+  });
+  if (!assistant) {
+    throw new NotFoundError("Assistant profile not found");
+  }
+  if (!assistant.doctorId) {
+    return { doctor: null, message: "No doctor assigned yet" };
+  }
+  const doctor = await prisma.doctor.findUnique({
+    where: { id: assistant.doctorId },
+    include: {
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          phone: true,
+          profilePhoto: true,
+        },
+      },
+      specialization: true,
+      schedules: true,
+    },
+  });
+  if (!doctor) {
+    return { doctor: null, message: "No doctor assigned yet" };
+  }
+  return { doctor, message: null };
+};
+
 export const getDashboard = async (userId: string) => {
   const assistant = await prisma.doctorAssistant.findUnique({
     where: { userId },

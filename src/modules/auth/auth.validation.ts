@@ -5,6 +5,7 @@ import type {
   ChangePasswordInput,
   ForgotPasswordInput,
   LoginInput,
+  RegisterAssistantInput,
   RegisterDoctorInput,
   RegisterPatientInput,
   ResetPasswordInput,
@@ -99,6 +100,23 @@ export const validateRegisterDoctor = (
     latitude: optionalNumber(body.latitude, "latitude must be a number"),
     longitude: optionalNumber(body.longitude, "longitude must be a number"),
   } as RegisterDoctorInput;
+  next();
+};
+
+export const validateRegisterAssistant = (
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+): void => {
+  const body = asRecord(req.body);
+  const input: RegisterAssistantInput = {
+    fullName: requireText(body.fullName, "fullName is required"),
+    email: requireEmail(body.email),
+    phone: optionalText(body.phone, "phone must be a string"),
+    password: requirePassword(body.password),
+    designation: optionalText(body.designation, "designation must be a string"),
+  };
+  req.body = input;
   next();
 };
 

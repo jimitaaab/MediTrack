@@ -2,7 +2,7 @@ import { Prisma } from "../../../generated/prisma/client";
 import { prisma } from "../../config/prisma";
 import { NotFoundError } from "../../shared/errors";
 import { AccountStatus, AppointmentStatus, DoctorVerificationStatus, Role } from "../../../generated/prisma/client";
-import { notifyDoctorApproved, notifyDoctorRejected } from "../notifications/notification.service";
+import { notifyAssistantAssigned, notifyDoctorApproved, notifyDoctorRejected } from "../notifications/notification.service";
 import type { UpdateAdminProfileInput } from "./admin.types";
 
 const adminInclude = {
@@ -128,6 +128,88 @@ export const suspendDoctor = async (doctorId: string) => {
     data: { status: AccountStatus.SUSPENDED },
   });
   return findDoctorOrThrow(doctorId);
+};
+
+const assistantInclude = {
+  user: {
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      phone: true,
+      profilePhoto: true,
+      status: true,
+      createdAt: true,
+    },
+  },
+  doctor: {
+    select: {
+      id: true,
+      consultationFee: true,
+      user: { select: { id: true, fullName: true } },
+      specialization: { select: { id: true, name: true } },
+    },
+  },
+} as const;
+
+const findAssistantOrThrow = async (assistantId: string) => {
+  const assistant = await prisma.doctorAssistant.findUnique({
+    where: { id: assistantId },
+    include: assistantInclude,
+  });
+  if (!assistant) {
+    throw new NotFoundError("Assistant not found");
+  }
+  return assistant;
+};
+
+export const listAssistants = async () => {
+  return prisma.doctorAssistant.findMany({
+    include: assistantInclude,
+    orderBy: { user: { createdAt: "desc" } },
+  });
+};
+
+export const assignAssistantDoctor = async (
+  assistantId: string,
+  doctorId: string | null,
+) => {
+  const assistant = await findAssistantOrThrow(assistantId);
+
+  if (doctorId !== null) {
+    const doctor = await prisma.doctor.findUnique({
+      where: { id: doctorId },
+      select: { id: true, user: { select: { fullName: true } } },
+    });
+    if (!doctor) {
+      throw new NotFoundError("Doctor not found");
+    }
+    const updated = await prisma.doctorAssistant.update({
+      where: { id: assistantId },
+      data: { doctorId: doctor.id },
+      include: assistantInclude,
+    });
+    await notifyAssistantAssigned(assistant.user.id, doctor.user.fullName);
+    return updated;
+  }
+
+  return prisma.doctorAssistant.update({
+    where: { id: assistantId },
+    data: { doctorId: null },
+    include: assistantInclude,
+  });
+};
+
+export const suspendAssistant = async (assistantId: string) => {
+  const assistant = await findAssistantOrThrow(assistantId);
+  if (assistant.user.status === AccountStatus.SUSPENDED) {
+    return assistant;
+  }
+  await prisma.user.update({
+    where: { id: assistant.user.id },
+    data: { status: AccountStatus.SUSPENDED },
+  });
+  return findAssistantOrThrow(assistantId);
 };
 
 const reduceByEnum = <T extends string>(
