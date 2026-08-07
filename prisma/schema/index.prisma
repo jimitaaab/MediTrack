@@ -1,0 +1,2 @@
+// Multi-file Prisma schema marker file.
+// Schema files live in ./models and ./enums; config in ./schema.prisma

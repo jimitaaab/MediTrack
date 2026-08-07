@@ -1,0 +1,27 @@
+model Doctor {
+  id                   String                    @id @default(uuid())
+  userId               String                    @unique
+  user                 User                      @relation(fields: [userId], references: [id])
+  specializationId     String
+  specialization       Specialization            @relation(fields: [specializationId], references: [id])
+  hospitalName         String?
+  clinicAddress        String?
+  latitude             Float?
+  longitude            Float?
+  consultationFee      Float
+  verificationStatus   DoctorVerificationStatus  @default(PENDING)
+  averageRating        Float                     @default(0)
+  totalReviews         Int                       @default(0)
+
+  schedules            DoctorSchedule[]
+  appointments         Appointment[]
+  reviews              Review[]
+  assistants           DoctorAssistant[]
+  queues               Queue[]
+}
+
+enum DoctorVerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}

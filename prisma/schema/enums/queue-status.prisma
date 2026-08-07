@@ -1,0 +1,8 @@
+enum QueueStatus {
+  WAITING
+  CALLED
+  IN_CONSULTATION
+  COMPLETED
+  ABSENT
+  SKIPPED
+}

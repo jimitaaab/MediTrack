@@ -1,0 +1,9 @@
+model DoctorSchedule {
+  id                  String   @id @default(uuid())
+  doctorId            String
+  doctor              Doctor   @relation(fields: [doctorId], references: [id])
+  dayOfWeek           Weekday
+  startTime           String // "10:00"
+  endTime             String // "17:00"
+  slotDurationMinutes Int      @default(15)
+}

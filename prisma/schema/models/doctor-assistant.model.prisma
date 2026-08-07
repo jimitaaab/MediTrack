@@ -1,0 +1,10 @@
+model DoctorAssistant {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id])
+  designation   String?
+  doctorId      String?
+  doctor        Doctor?  @relation(fields: [doctorId], references: [id])
+
+  appointments  Appointment[]
+}

@@ -1,0 +1,14 @@
+model ChatbotLog {
+  id                       String    @id @default(uuid())
+
+  patientId                String
+  patient                  Patient   @relation(fields: [patientId], references: [id])
+
+  question                 String
+  response                 String
+
+  urgencyLevel             String?
+  suggestedSpecialization  String?
+
+  createdAt                DateTime  @default(now())
+}

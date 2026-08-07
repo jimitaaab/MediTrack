@@ -1,0 +1,10 @@
+node_modules
+dist
+.env
+build
+generated
+/generated/prisma
+planning.md
+compilation.md
+coverage
+.vercel

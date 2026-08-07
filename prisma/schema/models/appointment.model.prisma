@@ -1,0 +1,17 @@
+model Appointment {
+  id            String              @id @default(uuid())
+  patientId     String
+  patient       Patient             @relation(fields: [patientId], references: [id])
+  doctorId      String
+  doctor        Doctor              @relation(fields: [doctorId], references: [id])
+  assistantId   String?
+  assistant     DoctorAssistant?    @relation(fields: [assistantId], references: [id])
+  date          DateTime
+  timeSlot      String
+  serialNumber  Int
+  status        AppointmentStatus   @default(PENDING)
+  createdAt     DateTime            @default(now())
+
+  queue  Queue?
+  review Review?
+}

@@ -1,0 +1,25 @@
+model User {
+  id                  String        @id @default(uuid())
+
+  fullName            String
+  email               String        @unique
+  phone               String?
+  profilePhoto        String?
+
+  password            String
+
+  role                Role
+  status              AccountStatus @default(ACTIVE)
+
+  needsPasswordChange Boolean       @default(false)
+
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  patient             Patient?
+  doctor              Doctor?
+  assistant           DoctorAssistant?
+  admin               Admin?
+
+  notifications       Notification[]
+}
