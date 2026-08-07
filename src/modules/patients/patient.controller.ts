@@ -19,6 +19,20 @@ export const getOwnProfileController = catchAsync(
   },
 );
 
+export const getDashboardController = catchAsync(
+  async (req: Request, res: Response) => {
+    const userId = req.user?.id;
+    if (!userId) throw new UnauthorizedError("Authentication required");
+    const result = await patientService.getDashboard(userId);
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Patient dashboard retrieved successfully",
+      data: result,
+    });
+  },
+);
+
 export const updateOwnProfile = catchAsync(
   async (req: Request, res: Response) => {
     const userId = req.user?.id;

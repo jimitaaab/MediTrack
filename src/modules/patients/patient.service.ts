@@ -1,5 +1,8 @@
 import { Prisma } from "../../../generated/prisma/client";
-import { Gender } from "../../../generated/prisma/client";
+import {
+  AppointmentStatus,
+  Gender,
+} from "../../../generated/prisma/client";
 import { prisma } from "../../config/prisma";
 import { NotFoundError, ValidationError } from "../../shared/errors";
 import type { UpdatePatientProfileInput } from "./patient.interface";
@@ -75,4 +78,95 @@ export const updateOwnProfile = async (
   ]);
 
   return getOwnProfile(userId);
+};
+
+const getTodayRange = () => {
+  const now = new Date();
+  const start = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+  return { start, end };
+};
+
+const patientAppointmentInclude = {
+  doctor: {
+    include: {
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          profilePhoto: true,
+        },
+      },
+      specialization: true,
+    },
+  },
+} as const;
+
+export const getDashboard = async (userId: string) => {
+  const patient = await prisma.patient.findUnique({
+    where: { userId },
+    include: {
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          phone: true,
+          profilePhoto: true,
+        },
+      },
+    },
+  });
+  if (!patient) {
+    throw new NotFoundError("Patient profile not found");
+  }
+
+  const { start } = getTodayRange();
+
+  const upcomingAppointment = await prisma.appointment.findFirst({
+    where: {
+      patientId: patient.id,
+      date: { gte: start },
+      status: { in: [AppointmentStatus.PENDING, AppointmentStatus.CONFIRMED] },
+    },
+    orderBy: [{ date: "asc" }, { timeSlot: "asc" }],
+    include: patientAppointmentInclude,
+  });
+
+  const [total, pending, confirmed, completed, cancelled] =
+    await Promise.all([
+      prisma.appointment.count({ where: { patientId: patient.id } }),
+      prisma.appointment.count({
+        where: { patientId: patient.id, status: AppointmentStatus.PENDING },
+      }),
+      prisma.appointment.count({
+        where: { patientId: patient.id, status: AppointmentStatus.CONFIRMED },
+      }),
+      prisma.appointment.count({
+        where: { patientId: patient.id, status: AppointmentStatus.COMPLETED },
+      }),
+      prisma.appointment.count({
+        where: { patientId: patient.id, status: AppointmentStatus.CANCELLED },
+      }),
+    ]);
+
+  const recentAppointments = await prisma.appointment.findMany({
+    where: { patientId: patient.id },
+    orderBy: { date: "desc" },
+    take: 5,
+    include: patientAppointmentInclude,
+  });
+
+  return {
+    welcome: {
+      fullName: patient.user.fullName,
+      email: patient.user.email,
+      profilePhoto: patient.user.profilePhoto,
+    },
+    totals: { total, pending, confirmed, completed, cancelled },
+    upcomingAppointment,
+    recentAppointments,
+  };
 };

@@ -8,5 +8,6 @@ const router = Router();
 
 router.get("/me", auth, requireRole(Roles.DOCTOR_ASSISTANT), assistantController.getOwnProfileController);
 router.patch("/me", auth, requireRole(Roles.DOCTOR_ASSISTANT), assistantController.updateOwnProfileController);
+router.get("/me/dashboard", auth, requireRole(Roles.DOCTOR_ASSISTANT), assistantController.getDashboardController);
 
 export default router;
