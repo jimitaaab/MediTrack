@@ -5,9 +5,9 @@ import catchAsync from "../../shared/utils/asyncHandler";
 import { UnauthorizedError, ValidationError } from "../../shared/errors";
 import * as adminService from "./admin.service";
 
-const requireId = (value: unknown): string => {
+const requireId = (value: unknown, label = "id"): string => {
   if (typeof value !== "string" || !value.trim()) {
-    throw new ValidationError("Doctor id is required");
+    throw new ValidationError(`${label} is required`);
   }
   return value;
 };
@@ -111,6 +111,54 @@ export const getReportsController = catchAsync(
       success: true,
       statusCode: httpStatus.OK,
       message: "Reports retrieved successfully",
+      data: result,
+    });
+  },
+);
+
+export const listAssistantsController = catchAsync(
+  async (_req: Request, res: Response) => {
+    const result = await adminService.listAssistants();
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Assistants retrieved successfully",
+      data: result,
+    });
+  },
+);
+
+export const assignAssistantDoctorController = catchAsync(
+  async (req: Request, res: Response) => {
+    const { doctorId } = req.body;
+    if (
+      doctorId !== null &&
+      (typeof doctorId !== "string" || !doctorId.trim())
+    ) {
+      throw new ValidationError("doctorId must be a string or null");
+    }
+    const result = await adminService.assignAssistantDoctor(
+      requireId(req.params.id),
+      doctorId as string | null,
+    );
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Assistant doctor assignment updated successfully",
+      data: result,
+    });
+  },
+);
+
+export const suspendAssistantController = catchAsync(
+  async (req: Request, res: Response) => {
+    const result = await adminService.suspendAssistant(
+      requireId(req.params.id),
+    );
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Assistant suspended successfully",
       data: result,
     });
   },

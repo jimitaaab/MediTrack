@@ -14,5 +14,8 @@ router.get("/doctors/pending", auth, requireRole(Roles.ADMIN), adminController.g
 router.patch("/doctors/:id/approve", auth, requireRole(Roles.ADMIN), adminController.approveDoctorController);
 router.patch("/doctors/:id/reject", auth, requireRole(Roles.ADMIN), adminController.rejectDoctorController);
 router.patch("/doctors/:id/suspend", auth, requireRole(Roles.ADMIN), adminController.suspendDoctorController);
+router.get("/assistants", auth, requireRole(Roles.ADMIN), adminController.listAssistantsController);
+router.patch("/assistants/:id/assign-doctor", auth, requireRole(Roles.ADMIN), adminController.assignAssistantDoctorController);
+router.patch("/assistants/:id/suspend", auth, requireRole(Roles.ADMIN), adminController.suspendAssistantController);
 
 export default router;

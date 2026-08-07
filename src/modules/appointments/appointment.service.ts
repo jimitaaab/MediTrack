@@ -265,6 +265,16 @@ const getAssistantDoctorId = async (userId: string): Promise<string> => {
   return assistant.doctorId;
 };
 
+const getAssistantContext = async (
+  userId: string,
+): Promise<{ assistantId: string; doctorId: string }> => {
+  const assistant = await getAssistantByUserId(userId);
+  if (!assistant.doctorId) {
+    throw new ForbiddenError("Assistant is not assigned to a doctor");
+  }
+  return { assistantId: assistant.id, doctorId: assistant.doctorId };
+};
+
 const getDoctorAppointmentOrThrow = async (
   doctorId: string,
   appointmentId: string,
@@ -348,14 +358,14 @@ export const getPendingRequests = async (userId: string) => {
 };
 
 export const acceptRequest = async (userId: string, appointmentId: string) => {
-  const doctorId = await getAssistantDoctorId(userId);
+  const { assistantId, doctorId } = await getAssistantContext(userId);
   const appointment = await getDoctorAppointmentOrThrow(doctorId, appointmentId);
   if (appointment.status !== AppointmentStatus.PENDING) {
     throw new ConflictError("Only pending appointments can be accepted");
   }
   const updated = await prisma.appointment.update({
     where: { id: appointmentId },
-    data: { status: AppointmentStatus.CONFIRMED },
+    data: { status: AppointmentStatus.CONFIRMED, assistantId },
     include: appointmentInclude,
   });
   await notifyAppointmentAccepted(appointmentId);
@@ -363,7 +373,7 @@ export const acceptRequest = async (userId: string, appointmentId: string) => {
 };
 
 export const rejectRequest = async (userId: string, appointmentId: string) => {
-  const doctorId = await getAssistantDoctorId(userId);
+  const { assistantId, doctorId } = await getAssistantContext(userId);
   const appointment = await getDoctorAppointmentOrThrow(doctorId, appointmentId);
   if (appointment.status !== AppointmentStatus.PENDING) {
     throw new ConflictError("Only pending appointments can be rejected");
@@ -372,7 +382,7 @@ export const rejectRequest = async (userId: string, appointmentId: string) => {
   await prisma.$transaction(async (tx) => {
     await tx.appointment.update({
       where: { id: appointmentId },
-      data: { status: AppointmentStatus.REJECTED },
+      data: { status: AppointmentStatus.REJECTED, assistantId },
     });
     if (appointment.queue) {
       await tx.queue.delete({ where: { id: appointment.queue.id } });
@@ -392,7 +402,7 @@ export const rescheduleAppointment = async (
   appointmentId: string,
   payload: RescheduleAppointmentInput,
 ) => {
-  const doctorId = await getAssistantDoctorId(userId);
+  const { assistantId, doctorId } = await getAssistantContext(userId);
   const appointment = await getDoctorAppointmentOrThrow(doctorId, appointmentId);
   if (
     appointment.status !== AppointmentStatus.PENDING &&
@@ -439,7 +449,7 @@ export const rescheduleAppointment = async (
 
     await tx.appointment.update({
       where: { id: appointmentId },
-      data: { date, timeSlot, serialNumber },
+      data: { date, timeSlot, serialNumber, assistantId },
     });
 
     await tx.queue.update({
@@ -459,7 +469,7 @@ export const rescheduleAppointment = async (
 };
 
 export const cancelByStaff = async (userId: string, appointmentId: string) => {
-  const doctorId = await getAssistantDoctorId(userId);
+  const { assistantId, doctorId } = await getAssistantContext(userId);
   const appointment = await getDoctorAppointmentOrThrow(doctorId, appointmentId);
   if (
     appointment.status !== AppointmentStatus.PENDING &&
@@ -471,7 +481,7 @@ export const cancelByStaff = async (userId: string, appointmentId: string) => {
   await prisma.$transaction(async (tx) => {
     await tx.appointment.update({
       where: { id: appointmentId },
-      data: { status: AppointmentStatus.CANCELLED },
+      data: { status: AppointmentStatus.CANCELLED, assistantId },
     });
     if (appointment.queue) {
       await tx.queue.delete({ where: { id: appointment.queue.id } });
@@ -491,7 +501,7 @@ export const updateAppointmentStatus = async (
   appointmentId: string,
   status: unknown,
 ) => {
-  const doctorId = await getAssistantDoctorId(userId);
+  const { assistantId, doctorId } = await getAssistantContext(userId);
   const appointment = await getDoctorAppointmentOrThrow(doctorId, appointmentId);
   if (status !== AppointmentStatus.CONFIRMED) {
     throw new ValidationError("status must be CONFIRMED");
@@ -501,7 +511,7 @@ export const updateAppointmentStatus = async (
   }
   const updated = await prisma.appointment.update({
     where: { id: appointmentId },
-    data: { status: AppointmentStatus.CONFIRMED },
+    data: { status: AppointmentStatus.CONFIRMED, assistantId },
     include: appointmentInclude,
   });
   await notifyAppointmentAccepted(appointmentId);

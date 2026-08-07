@@ -5,6 +5,7 @@ import {
   validateChangePassword,
   validateForgotPassword,
   validateLogin,
+  validateRegisterAssistant,
   validateRegisterDoctor,
   validateRegisterPatient,
   validateResetPassword,
@@ -21,6 +22,11 @@ router.post(
   "/register/doctor",
   validateRegisterDoctor,
   authController.registerDoctorController,
+);
+router.post(
+  "/register/assistant",
+  validateRegisterAssistant,
+  authController.registerAssistantController,
 );
 router.post("/login", validateLogin, authController.loginController);
 router.post("/refresh-token", authController.refreshTokenController);

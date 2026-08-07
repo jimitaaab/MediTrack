@@ -14,6 +14,10 @@ export interface RegisterDoctorInput extends RegisterPatientInput {
   longitude?: number;
 }
 
+export interface RegisterAssistantInput extends RegisterPatientInput {
+  designation?: string;
+}
+
 export interface LoginInput {
   email: string;
   password: string;
