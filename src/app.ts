@@ -14,7 +14,10 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: config.app_url,
+    origin: [
+      config.app_url,
+      "https://YOUR-FRONTEND-VERCEL-DOMAIN.vercel.app",
+    ],
     credentials: true,
   }),
 );

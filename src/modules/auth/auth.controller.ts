@@ -12,15 +12,18 @@ const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
 const setAuthCookies = (res: Response, tokens: AuthTokensResult) => {
   res.cookie("accessToken", tokens.accessToken, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: false,
+    secure: true,
+    sameSite: "none",
     maxAge: ACCESS_TOKEN_MAX_AGE,
+    path: "/",
   });
+
   res.cookie("refreshToken", tokens.refreshToken, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: false,
+    secure: true,
+    sameSite: "none",
     maxAge: REFRESH_TOKEN_MAX_AGE,
+    path: "/",
   });
 };
 
