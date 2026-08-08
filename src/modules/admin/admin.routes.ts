@@ -11,6 +11,7 @@ router.get("/reports", auth, requireRole(Roles.ADMIN), adminController.getReport
 router.get("/me", auth, requireRole(Roles.ADMIN), adminController.getOwnProfileController);
 router.patch("/me", auth, requireRole(Roles.ADMIN), adminController.updateOwnProfileController);
 router.get("/doctors/pending", auth, requireRole(Roles.ADMIN), adminController.getPendingDoctorsController);
+router.get("/doctors", auth, requireRole(Roles.ADMIN), adminController.listAllDoctorsController);
 router.patch("/doctors/:id/approve", auth, requireRole(Roles.ADMIN), adminController.approveDoctorController);
 router.patch("/doctors/:id/reject", auth, requireRole(Roles.ADMIN), adminController.rejectDoctorController);
 router.patch("/doctors/:id/suspend", auth, requireRole(Roles.ADMIN), adminController.suspendDoctorController);

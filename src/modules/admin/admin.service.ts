@@ -90,6 +90,13 @@ export const getPendingDoctors = async () => {
   });
 };
 
+export const listAllDoctors = async () => {
+  return prisma.doctor.findMany({
+    include: doctorInclude,
+    orderBy: { user: { fullName: "asc" } },
+  });
+};
+
 export const approveDoctor = async (doctorId: string) => {
   const doctor = await findDoctorOrThrow(doctorId);
   if (doctor.verificationStatus === DoctorVerificationStatus.APPROVED) {
@@ -236,6 +243,7 @@ export const getDashboardStats = async () => {
     totalAppointments,
     totalSpecializations,
     totalReviews,
+    reviewsAggregate,
     pendingDoctors,
     approvedDoctors,
     rejectedDoctors,
@@ -250,6 +258,7 @@ export const getDashboardStats = async () => {
     prisma.appointment.count(),
     prisma.specialization.count(),
     prisma.review.count(),
+    prisma.review.aggregate({ _avg: { rating: true } }),
     prisma.doctor.count({
       where: { verificationStatus: DoctorVerificationStatus.PENDING },
     }),
@@ -295,6 +304,10 @@ export const getDashboardStats = async () => {
       pending: pendingDoctors,
       approved: approvedDoctors,
       rejected: rejectedDoctors,
+    },
+    reviewStats: {
+      total: totalReviews,
+      averageRating: Number((reviewsAggregate._avg.rating ?? 0).toFixed(2)),
     },
     appointmentStatuses: reduceByEnum(
       appointmentStatuses.map((entry) => ({
@@ -348,6 +361,7 @@ export const getReports = async (query: ReportQuery) => {
     rejectedAppointments,
     totalReviews,
     averageRating,
+    activeUsers,
     roleCounts,
     appointmentsByDate,
     topDoctors,
@@ -370,6 +384,7 @@ export const getReports = async (query: ReportQuery) => {
     }),
     prisma.review.count(),
     prisma.review.aggregate({ _avg: { rating: true } }),
+    prisma.user.count({ where: { status: AccountStatus.ACTIVE } }),
     prisma.user.groupBy({
       by: ["role"],
       _count: { _all: true },
@@ -390,6 +405,7 @@ export const getReports = async (query: ReportQuery) => {
         consultationFee: true,
         averageRating: true,
         totalReviews: true,
+        _count: { select: { _all: true } },
         user: { select: { id: true, fullName: true } },
         specialization: { select: { id: true, name: true } },
       },
@@ -418,6 +434,7 @@ export const getReports = async (query: ReportQuery) => {
       confirmedAppointments,
       rejectedAppointments,
       completionRate,
+      activeUsers,
     },
     reviews: {
       total: totalReviews,

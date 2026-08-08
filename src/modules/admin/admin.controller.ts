@@ -52,6 +52,18 @@ export const getPendingDoctorsController = catchAsync(
   },
 );
 
+export const listAllDoctorsController = catchAsync(
+  async (req: Request, res: Response) => {
+    const result = await adminService.listAllDoctors();
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Doctors retrieved successfully",
+      data: result,
+    });
+  },
+);
+
 export const approveDoctorController = catchAsync(
   async (req: Request, res: Response) => {
     const result = await adminService.approveDoctor(requireId(req.params.id));

@@ -135,7 +135,7 @@ export const getDashboard = async (userId: string) => {
     include: patientAppointmentInclude,
   });
 
-  const [total, pending, confirmed, completed, cancelled] =
+  const [total, pending, confirmed, completed, cancelled, reviewsCount] =
     await Promise.all([
       prisma.appointment.count({ where: { patientId: patient.id } }),
       prisma.appointment.count({
@@ -150,6 +150,7 @@ export const getDashboard = async (userId: string) => {
       prisma.appointment.count({
         where: { patientId: patient.id, status: AppointmentStatus.CANCELLED },
       }),
+      prisma.review.count({ where: { patientId: patient.id } }),
     ]);
 
   const recentAppointments = await prisma.appointment.findMany({
@@ -165,7 +166,7 @@ export const getDashboard = async (userId: string) => {
       email: patient.user.email,
       profilePhoto: patient.user.profilePhoto,
     },
-    totals: { total, pending, confirmed, completed, cancelled },
+    totals: { total, pending, confirmed, completed, cancelled, reviewsCount },
     upcomingAppointment,
     recentAppointments,
   };

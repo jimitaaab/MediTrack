@@ -17,29 +17,27 @@ const getEnv = (key: string, fallback?: string): string => {
 
 export default {
   PORT: getEnv("PORT", "5000"),
-
   DATABASE_URL: getEnv("DATABASE_URL"),
 
   app_url: getEnv(
     "APP_URL",
-    "http://localhost:5173"
+    "http://localhost:5173",
   ),
 
   bcryptSaltRounds: getEnv("bcrypt_salt_rounds", "10"),
 
   jwt_access_Secret: getEnv("jwt_access_Secret"),
-
   jwt_refresh_Secret: getEnv("jwt_refresh_Secret"),
 
   jwt_access_ExpiresIn: getEnv(
     "jwt_access_ExpiresIn",
-    "1d"
+    "1d",
   ),
 
   jwt_refresh_ExpiresIn: getEnv(
     "jwt_refresh_ExpiresIn",
-    "7d"
+    "7d",
   ),
 
-  openai_api_key: process.env.OPENAI_API_KEY ?? "",
+  groq_api_key: process.env.GROQ_API_KEY ?? "",
 };
